@@ -1,0 +1,44 @@
+---
+title: "R Notebook"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
+  
+---
+# Importer les données
+```{bash}
+wget https://pagesperso.univ-brest.fr/~maignien/teaching/M1-MFA/UE-Ecogenomique2/EcoG2_data_cc2.tar.gz
+```
+
+# Extraire les données
+```{bash}
+tar vxzf EcoG2_data_cc2.tar.gz
+```
+
+# Silva
+```{bash}
+wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz
+```
+Importer la banque de données Silva pour faire les assignations taxonomique
+
+```{bash}
+wget https://zenodo.org/record/3986799/files/silva_species_assignment_v138.fa.gz
+```
+# GitHub
+
+```{r}
+R.version.string
+```
+
+## Installer Git
+```{bash}
+sudo apt-get install git
+```
+```
+
+```{r}
+library("usethis")
+use_git_config(user.name = "Lucile-Meyer", user.email = "lucilemeyer031@gmail.com")
+```
+

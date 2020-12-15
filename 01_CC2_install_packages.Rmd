@@ -1,0 +1,86 @@
+---
+title: "R Notebook"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{bash}
+sudo apt-get update -y 
+sudo apt-get install -y libbz2-dev
+sudo apt-get install -y liblzma-dev
+```
+
+```{r package install}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install(version = '3.11')
+BiocManager::install("dada2", version = "3.11")
+library(dada2)
+```
+
+# Phyloseq
+
+```{bash}
+sudo apt-get install -y libglpk-dev
+```
+
+```{r package install}
+BiocManager::install("phyloseq", version="3.11")
+```
+
+```{r}
+library(phyloseq); packageVersion("phyloseq")
+```
+
+# Biostrings
+
+```{r}
+BiocManager::install("Biostrings", version = "3.11")
+```
+
+```{r}
+library(Biostrings); packageVersion("Biostrings")
+```
+## ggplot2
+```{r}
+BiocManager::install("ggplot2", version = "3.11")
+```
+
+```{r}
+library(ggplot2); packageVersion("ggplot2")
+```
+
+```{r}
+theme_set(theme_bw())
+```
+
+# Installer les packages pour faire l'arbre
+```{r}
+BiocManager::install("phangorn")
+BiocManager::install("DECIPHER")
+```
+```{r}
+library(phangorn)
+library(DECIPHER)
+```
+
+
+
+## Pour regrouper les arbres phylogénétiques phyloseq
+```{r}
+install.packages("gridExtra")
+```
+
+```{r}
+library(gridExtra)
+```
+
+```{r}
+install.packages('grid.arrange')
+```
+
+```{r}
+library(grid.arrange)
+```

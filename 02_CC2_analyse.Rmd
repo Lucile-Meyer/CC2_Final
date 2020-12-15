@@ -1,0 +1,230 @@
+---
+title: "R Notebook"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
+  
+---
+
+```{r}
+library(dada2)
+path <- "~/Git/CC2/data"
+list.files(path)
+```
+Après avoir dézipper notre jeu de données, on va l'importer dans un objet path qui regroupera les différentes données.
+
+```{r}
+fnFs <- sort(list.files(path, pattern="1.fastq", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern="2.fastq", full.names = TRUE))
+sample.namesFs <- sapply(strsplit(basename(fnFs), "\\."), `[`, 1)
+sample.namesRs <- sapply(strsplit(basename(fnRs), "\\."), `[`, 1)
+sample.namesFs
+```
+```{r}
+sample.namesRs
+```
+On va séparer notre jeu de données en plaçant dans un objet fnFs tous les reads foward, donc les reads 1. On placera donc dans un objet fnRs tous les reads reverse, donc les reads 2
+
+# Analyse qualité des reads
+
+```{r}
+plotQualityProfile(fnFs[1:2])
+```
+```{r}
+plotQualityProfile(fnRs[1:2])
+```
+Avec cette fonction on va regarder les scores qualités de nos deux premières données présentes dans fnFs et fnRs. Un plot sera donc réalisé permettant de visualiser le profil qualité de ces séquences. On retrouve le score qualité en ordonnée et la longueur des séquences en abscisse. La ligne verte correspond au score de qualité des nucléotides de chaque séquence. La ligne orange représente la longueur de chaque read (sachant qu'avec illumina on a des read de 250 pb). On remarque que les read Forwards ont un bon score de qualité qui ne semble pas descendre en desosus du Q30 avant les 230-240 pb. Pour les reads Reverse on remarque que les score qualités sont un peu moins bon. En effet ils descendent en dessous du Q30 vers les 200 pb.
+
+```{r}
+filtFs <- file.path(path, "filtered", paste0(sample.namesFs, "_R1.fastq"))
+filtRs <- file.path(path, "filtered", paste0(sample.namesRs, "_R2.fastq"))
+names(filtFs) <- sample.namesFs
+names(filtRs) <- sample.namesRs
+filtFs
+```
+```{r}
+filtRs
+```
+Cette fonction permet de ranger les fichiers dans un dossiers filtered avec des objets filtFs et Rs
+respectivement pour les fichiers Forward et Reverse.
+
+```{r}
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, trimLeft= 21, truncLen=c(240,200),
+              maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+              compress=TRUE, multithread=TRUE)
+head(out)
+```
+Cette fonction va nous permettre de couper et de filtrer nos reads grâce au filterAndTrim. La fonction truncLen va permettre de couper les reads forward et reverse à l'endroit indiqué. Nous avons choisi de couper les reads Forwards à 240 pb et les reads Reverses à 200 pb. En effet nous avons vu précédement qu'au delà de 240 pb les scores qualité n'étaient pas bon pour les forwards (200 pb pour les reads reverses). La fonction maxEE=c(2,2) va nous permettre d’écarter les reads avec
+un score de qualité inférieur à Q20, c'est à dire les séquences ayant  1 erreur toutes les 100 paires de bases en moyenne. Le timLeft va permettre d'enlever les primer sur nos reads Forwards et Reverses. La valeur du reads.in nous indique le nombre de reads initial et reads.out le nombre de reads apres filtrage qualité. On peut voir qu'on ne perds pas beaucoup de reads.
+
+## Calcul du modèle d'erreur
+
+```{r}
+errF <- learnErrors(filtFs, multithread=TRUE)
+```
+```{r}
+errR <- learnErrors(filtRs, multithread=TRUE)
+```
+LearnErrors va permettre de générer un algorithme mathématique avec nos données filtrées dans filtFs et filtRs. Ca va permettre de créer un modèle d'erreur permettant par la suite de corriger les erreurs sur nos reads.
+
+```{r}
+plotErrors(errF, nominalQ = TRUE)
+```
+```{r}
+plotErrors(errR, nominalQ = TRUE)
+```
+On a tracer des graphiques reprèsentant les erreurs sur nos différentes reads (forwards et reverses). Avec un score de qualité très haut, la probabilité que A donne un A est très forte (visible sur le graphique A2A). Sur le graphique A2C nous verrons la probabilité que A ait donné un C et ainsi dessuite. Il sera donc possible de visualiser les probabilité de chaque nucléotide en donne un autre. Ainsi  Plus le Q score augmente et plus la probabilité qu’il y ait une substitution est faible.
+Illumina fait des erreurs de lecture, c'est pour cette raison qu'appliquer ce modèle mathématique permettra de corriger ces erreurs. En revanche il faut avoir conscience que ce modèle ne va pas permerttre de corriger toutes les erreurs et qu'il peut en créer, par exemple en corrigeant une base par une autre en la prennant pour une erreur de lecture alors qu'elle pourrait être un variant naturelle de cette séquence. 
+La courbe en noire correspond au modèle mathématique que Dada2 a créée.
+
+# Apliccation du modèle d'erreur
+
+```{r}
+dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
+```
+Cette fonction permet d'appliquer notre modèle mathématique à nos séquences Forwards.
+
+```{r}
+dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
+```
+On fait la même chose pour les Reverses.
+
+# Assemblage des reads
+
+```{r}
+mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
+```
+Merger va permettre de fusionner les reads Forwards avec les Reverses permettant la formation de contigs. 
+
+# Contruction de la table de séquence
+
+```{r}
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab)
+```
+On va placer dans l'objet seqtab, la matrice d'observation de l'objet issu de mergers. Il y a donc 11 lignes dans notre tableau avec 19426 colonnes. 
+
+
+# Identification et retrait des chimères
+
+```{r}
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+```
+Cette fonction va permettre d'identifier le nombre de chimère dans nos contigs. 17869 chimères ont été détectées et seront retirées de notre jeu de données.
+
+```{r}
+dim(seqtab.nochim)
+```
+Ici nous avons donc le tableau de nos données qui ne contient plus que 1557 colones.
+
+```{r}
+sum(seqtab.nochim)/sum(seqtab)
+```
+Il nous reste donc 78% de notre jeu de données. Plus de 20% des données étaient des chimères.
+
+# Pipeline
+
+```{r}
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers,
+getN), rowSums(seqtab.nochim))
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "n
+onchim")
+rownames(track) <- sample.namesFs
+head(track)
+```
+Track permet de voir les traitements que nous avons fais sur nos séquences depuis le début de l'analyse Dada2. On voit qu'on passe de 159971 séquences, dans la colonne input, à 87962 séquences après l'application du modèle d'erreur et le retrait des chimères. 
+
+# Assignation taxonomique
+
+```{r}
+taxa <- assignTaxonomy(seqtab.nochim, "~/Git/CC2/silva_nr99_v138_train_set.fa.gz", multithread=TRUE)
+taxa <- addSpecies(taxa, "~/Git/CC2/silva_species_assignment_v138.fa.gz")
+taxa.print <- taxtab 
+rownames(taxtab) <- NULL
+head(taxa.print)
+```
+Le fichier taxa va donc nous servir de référence taxonomique permettant donc d'avoir une taxonomie corresponds à nos différentes séquences.
+
+# Alignement de séquences
+
+```{r}
+library(DECIPHER)
+seqs <- getSequences(seqtab)
+names(seqs) <- seqs
+alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA)
+```
+La fonction getSequences va permettre d'extraire les séquences uniques de l’objet seqtab. La fonction AlignSeqs permet quant à elle d’aligner les séquences de l’objet seqs.
+
+# Phyloseq
+```{r}
+library(phyloseq)
+library(ggplot2)
+library(Biostrings)
+library(gridExtra)
+```
+
+Avant de faire une analyse en phyloseq il faut s'assurer que tous les packages sont installés et chargés avec la library()
+
+```{r}
+table <- read.table("Table_nom_colones.csv", sep=";", header=TRUE, row.names=1)
+```
+```{r}
+table
+```
+
+
+```{r}
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = FALSE), sample_data(table), tax_table(taxa))
+```
+```{r}
+ps
+```
+
+```{r}
+table(tax_table(ps)[, "Phylum"], exclude = NA)
+```
+fghj
+
+```{r}
+ps0 <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
+```
+fghbn,
+
+```{r}
+prevdf = apply(X = otu_table(ps0),
+MARGIN = ifelse(taxa_are_rows(ps0), yes = 1, no = 2),
+FUN = function(x){sum(x > 0)})
+prevdf = data.frame(Prevalence = prevdf,
+TotalAbundance = taxa_sums(ps0),
+tax_table(ps0))
+```
+dfghj
+
+```{r}
+plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
+```
+dfvg
+```{r}
+filterPhylum = c("Dependentiae", "Campilobacterota", "Elusimicrobiota", "Hydrogenedentes","NB1-j")
+ps1 = subset_taxa(ps0, !Phylum %in% filterPhylum)
+ps1
+```
+fghj,hgvf
+
+```{r}
+prevdf3 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
+ggplot(prevdf3, aes(TotalAbundance, Prevalence / nsamples(ps0),color=Phylum)) +
+geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) + geom_point(size = 2,
+alpha = 0.7) +
+scale_x_log10() + xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") +
+facet_wrap(~Phylum) + theme(legend.position="none")
+```
+fghbnj,
+```{r}
+GP.ord <- ordinate(ps, "PCoA", "bray")
+graph1 = plot_ordination(ps, GP.ord, type="samples", color="Profondeur", shape="date",title="BrayPCoA")
+graph1 + geom_point(size=4)
+```
+
