@@ -9,7 +9,7 @@ output:
 
 ```{r}
 library(dada2)
-path <- "~/Git/CC2/data"
+path <- "~/Git/CC2_Final/data"
 list.files(path)
 ```
 Après avoir dézipper notre jeu de données, on va l'importer dans un objet path qui regroupera les différentes données.
@@ -139,8 +139,10 @@ Track permet de voir les traitements que nous avons fais sur nos séquences depu
 # Assignation taxonomique
 
 ```{r}
-taxa <- assignTaxonomy(seqtab.nochim, "~/Git/CC2/silva_nr99_v138_train_set.fa.gz", multithread=TRUE)
-taxa <- addSpecies(taxa, "~/Git/CC2/silva_species_assignment_v138.fa.gz")
+ref_fasta <- "silva_nr99_v138_train_set.fa.gz"
+taxtab <- assignTaxonomy(seqtab.nochim, refFasta = ref_fasta)
+colnames(taxtab) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")
+taxa <- assignTaxonomy(seqtab.nochim, "silva_nr99_v138_train_set.fa.gz", multithread=TRUE)
 taxa.print <- taxtab 
 rownames(taxtab) <- NULL
 head(taxa.print)
@@ -168,19 +170,20 @@ library(gridExtra)
 Avant de faire une analyse en phyloseq il faut s'assurer que tous les packages sont installés et chargés avec la library()
 
 ```{r}
-table <- read.table("Table_nom_colones.csv", sep=";", header=TRUE, row.names=1)
+samdf <- read.table("Table_nom_colones.csv", sep=";", header=TRUE, row.names=1)
 ```
 ```{r}
-table
+samdf
 ```
 
 
 ```{r}
-ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = FALSE), sample_data(table), tax_table(taxa))
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = FALSE), sample_data(samdf), tax_table(taxa))
 ```
 ```{r}
 ps
 ```
+
 
 ```{r}
 table(tax_table(ps)[, "Phylum"], exclude = NA)
@@ -227,4 +230,62 @@ GP.ord <- ordinate(ps, "PCoA", "bray")
 graph1 = plot_ordination(ps, GP.ord, type="samples", color="Profondeur", shape="date",title="BrayPCoA")
 graph1 + geom_point(size=4)
 ```
+ffffff
 
+```{r}
+top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:30]
+ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
+ps.top20 <- prune_taxa(top20, ps.top20)
+plot_bar(ps.top20, x="Profondeur", fill="Genus") + facet_wrap(~date, scales="free_x")
+```
+ffffff
+
+```{r}
+plot_abundance = function(physeq,title = "",
+Facet = "Genus", Color = "Genus"){
+p1f = subset_taxa(physeq, Genus %in% c("Amylibacter"))
+mphyseq = psmelt(p1f)
+mphyseq <- subset(mphyseq, Abundance > 0)
+ggplot(data = mphyseq, mapping = aes_string(x = "date",y = "Profondeur",
+color = Color, fill = Color)) +
+geom_violin(fill = NA) +
+geom_point(size = 1, alpha = 0.3,
+position = position_jitter(width = 0.3)) +
+facet_wrap(facets = Facet) + theme(legend.position="none")}
+```
+
+```{r}
+ps3rj = transform_sample_counts(ps1, function(x){x / sum(x)})
+```
+
+```{r}
+plotBefore = plot_abundance(ps1,"")
+plotAfter = plot_abundance(ps3rj,"")
+grid.arrange(nrow = 2, plotBefore, plotAfter)
+```
+ffff
+
+```{r}
+plot_abundance = function(physeq,title = "",
+Facet = "Genus", Color = "Genus"){
+p1f = subset_taxa(physeq, Genus %in% c("NS4 marine group"))
+mphyseq = psmelt(p1f)
+mphyseq <- subset(mphyseq, Abundance > 0)
+ggplot(data = mphyseq, mapping = aes_string(x = "date",y = "Profondeur",
+color = Color, fill = Color)) +
+geom_violin(fill = NA) +
+geom_point(size = 1, alpha = 0.3,
+position = position_jitter(width = 0.3)) +
+facet_wrap(facets = Facet) + theme(legend.position="none")}
+```
+
+```{r}
+ps3rd = transform_sample_counts(ps1, function(x){x / sum(x)})
+```
+
+```{r}
+plotBefore = plot_abundance(ps1,"")
+plotAfter = plot_abundance(ps3rd,"")
+grid.arrange(nrow = 2, plotBefore, plotAfter)
+```
+fffff

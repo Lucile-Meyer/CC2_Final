@@ -84,3 +84,9 @@ install.packages('grid.arrange')
 ```{r}
 library(grid.arrange)
 ```
+
+# GitHub
+```{r}
+library("usethis")
+use_git_config(user.name = "Lucile-Meyer", user.email = "lucilemeyer031@gmail.com")
+```
