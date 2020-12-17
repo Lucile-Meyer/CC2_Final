@@ -89,8 +89,9 @@ plotQualityProfile(fnFs[1:2])
 plotQualityProfile(fnRs[1:2])
 ```
 
-![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-5-1.png)<!-- --> Avec
-cette fonction on va regarder les scores qualités de nos deux premières
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-5-1.png)<!-- --> 
+
+Avec cette fonction on va regarder les scores qualités de nos deux premières
 données présentes dans fnFs et fnRs. Un plot sera donc réalisé
 permettant de visualiser le profil qualité de ces séquences. On retrouve
 le score qualité en ordonnée et la longueur des séquences en abscisse.
@@ -230,8 +231,9 @@ plotErrors(errR, nominalQ = TRUE)
     
     ## Warning: Transformation introduced infinite values in continuous y-axis
 
-![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-12-1.png)<!-- --> On a
-tracer des graphiques reprèsentant les erreurs sur nos différentes reads
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-12-1.png)<!-- --> 
+
+On a tracer des graphiques reprèsentant les erreurs sur nos différentes reads
 (forwards et reverses). Avec un score de qualité très haut, la
 probabilité que A donne un A est très forte (visible sur le graphique
 A2A). Sur le graphique A2C nous verrons la probabilité que A ait donné
@@ -1050,8 +1052,9 @@ plotAfter = plot_abundance(ps3rd,"")
 grid.arrange(nrow = 2, plotBefore, plotAfter)
 ```
 
-![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-50-1.png)<!-- --> Nous
-réalisons les mêmes fonctions et nous obtenons le même graphique que
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-50-1.png)<!-- --> 
+
+Nous réalisons les mêmes fonctions et nous obtenons le même graphique que
 pour les analyses précédentes. Comme pour Amylibacter, il y a une plus
 faible abondance des Roseobacter en Mars. En revanche la différence
 d’abondance n’est pas incroyable, il pourrait servir de biomarqueur
@@ -1084,7 +1087,12 @@ grid.arrange(nrow = 2, plotBefore, plotAfter)
 
 ![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
 
-ffffff
+Nous réalisons les mêmes fonctions et nous obtenons le même graphique que
+les analyses précédentes. Nous observons là aussi que l'abondance et plus 
+faible en Mars qu'en Septembre. Comme pour les autres analyses, 
+SUP05 pourrait faire un bon biomarqueurs. Cependant il faut là aussi
+faire attention car l'abondance en Septembre est certes plus forte
+mais elle ne semble pas l'être de beaucoup.
 
 ``` r
 plot_abundance = function(physeq,title = "",
@@ -1118,8 +1126,8 @@ plus faible en Mars qu’en Septembre. Comme pour les autres analyses,
 Synochococcus pourrait faire un bon biomarqueurs.
 
 Ces différentes analyses ont montré qu’il peut y avoir plusieurs
-biomarqueurs possible. Cependant se ne sont pas les meilleurs étant
-donnés qu’ils restent quand même présent dans les deux saisons. Nous
+biomarqueurs possible. Cependant se ne sont pas les meilleurs biomarqueurs 
+étant donnés qu’ils restent quand même présent dans les deux saisons. Nous
 n’avons une analyse qui n’est portée que sur les genre. peut être
 aurions nous dû analyser les espèces pour trouver certaines espèces
 présentes dans l’une des deux saisons et absentes dans l’autre.
