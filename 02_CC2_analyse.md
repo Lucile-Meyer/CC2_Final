@@ -233,7 +233,7 @@ plotErrors(errR, nominalQ = TRUE)
 
 ![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-12-1.png)<!-- --> 
 
-On a tracer des graphiques reprèsentant les erreurs sur nos différentes reads
+On a tracé des graphiques reprèsentant les erreurs sur nos différentes reads
 (forwards et reverses). Avec un score de qualité très haut, la
 probabilité que A donne un A est très forte (visible sur le graphique
 A2A). Sur le graphique A2C nous verrons la probabilité que A ait donné
@@ -1126,8 +1126,10 @@ plus faible en Mars qu’en Septembre. Comme pour les autres analyses,
 Synochococcus pourrait faire un bon biomarqueurs.
 
 Ces différentes analyses ont montré qu’il peut y avoir plusieurs
-biomarqueurs possible. Cependant se ne sont pas les meilleurs biomarqueurs 
-étant donnés qu’ils restent quand même présent dans les deux saisons. Nous
-n’avons une analyse qui n’est portée que sur les genre. peut être
-aurions nous dû analyser les espèces pour trouver certaines espèces
-présentes dans l’une des deux saisons et absentes dans l’autre.
+biomarqueurs possible. Les meilleurs parmis ceux que nous avons testé
+sont les NS4 marine group, les NS5 marine group et les Synechococcus.
+Cependant se ne sont pas les meilleurs biomarqueurs étant donnés qu’ils 
+restent quand même présent dans les deux saisons. Nous n’avons une analyse 
+qui n’est portée que sur les genre. peut être aurions nous dû analyser les 
+espèces pour trouver certaines espèces présentes dans l’une des deux saisons 
+et absentes dans l’autre.
