@@ -67,7 +67,6 @@ library(DECIPHER)
 ```
 
 
-
 ## Pour regrouper les arbres phylogénétiques phyloseq
 ```{r}
 install.packages("gridExtra")

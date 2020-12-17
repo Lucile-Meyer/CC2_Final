@@ -13,6 +13,10 @@ R Notebook
   - [Assignation taxonomique](#assignation-taxonomique)
   - [Alignement de séquences](#alignement-de-séquences)
   - [Phyloseq](#phyloseq)
+      - [Influence de la pronfondeur et de la saison sur la structure
+        des
+        communautés.](#influence-de-la-pronfondeur-et-de-la-saison-sur-la-structure-des-communautés.)
+      - [Recherche de biomarqueurs](#recherche-de-biomarqueurs)
 
 ``` r
 library(dada2)
@@ -513,60 +517,61 @@ alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA)
     ## Determining distance matrix based on shared 8-mers:
     ## ================================================================================
     ## 
-    ## Time difference of 3026.93 secs
+    ## Time difference of 3155.04 secs
     ## 
     ## Clustering into groups by similarity:
     ## ================================================================================
     ## 
-    ## Time difference of 85.83 secs
+    ## Time difference of 83.84 secs
     ## 
     ## Aligning Sequences:
     ## ================================================================================
     ## 
-    ## Time difference of 276.46 secs
+    ## Time difference of 292.14 secs
     ## 
     ## Iteration 1 of 2:
     ## 
     ## Determining distance matrix based on alignment:
     ## ================================================================================
     ## 
-    ## Time difference of 327.55 secs
+    ## Time difference of 341.38 secs
     ## 
     ## Reclustering into groups by similarity:
     ## ================================================================================
     ## 
-    ## Time difference of 71.35 secs
+    ## Time difference of 66.37 secs
     ## 
     ## Realigning Sequences:
     ## ================================================================================
     ## 
-    ## Time difference of 179.96 secs
+    ## Time difference of 177.14 secs
     ## 
     ## Iteration 2 of 2:
     ## 
     ## Determining distance matrix based on alignment:
     ## ================================================================================
     ## 
-    ## Time difference of 351.83 secs
+    ## Time difference of 350.62 secs
     ## 
     ## Reclustering into groups by similarity:
     ## ================================================================================
     ## 
-    ## Time difference of 69.51 secs
+    ## Time difference of 71.39 secs
     ## 
     ## Realigning Sequences:
     ## ================================================================================
     ## 
-    ## Time difference of 32.41 secs
+    ## Time difference of 32.12 secs
     ## 
     ## Refining the alignment:
     ## ================================================================================
     ## 
-    ## Time difference of 1.21 secs
+    ## Time difference of 1.09 secs
 
 La fonction getSequences va permettre d’extraire les séquences uniques
 de l’objet seqtab. La fonction AlignSeqs permet quant à elle d’aligner
-les séquences de l’objet seqs.
+les séquences de l’objet seqs. Ainsi nous aurons nos différentes
+séquences qui seront alignées.
 
 # Phyloseq
 
@@ -601,6 +606,12 @@ packages sont installés et chargés avec la library()
 samdf <- read.table("Table_nom_colones.csv", sep=";", header=TRUE, row.names=1)
 ```
 
+Afin de pouvoir analyser les données en fonction de la profondeur et de
+la date de prélèvement, il faut que notre tableau de données possède ces
+colonnes. Un tableau Excel a été créé avec le nom des différentes
+séquences, la profondeur (surface, médian ou fond) et la date
+(septembre ou mars). Ce tableau a été placé dans l’objet samdf.
+
 ``` r
 samdf
 ```
@@ -629,9 +640,16 @@ samdf
     ## Station5_Surface2_11mars15_R1    surface      mars
     ## Station5_Surface2_11mars15_R2    surface      mars
 
+Ici nous pouvons voir notre objet samdf.
+
 ``` r
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = FALSE), sample_data(samdf), tax_table(taxa))
 ```
+
+Dans un objet ps, nous allons placer tous nos objets créés jusqu’à
+présent (samdf, taxtab et seqtab). Ainsi pour chaque séquence nous
+aurons les données correspondantes, permettant de faciliter les
+analyses.
 
 ``` r
 ps
@@ -641,6 +659,20 @@ ps
     ## otu_table()   OTU Table:         [ 1557 taxa and 11 samples ]
     ## sample_data() Sample Data:       [ 11 samples by 2 sample variables ]
     ## tax_table()   Taxonomy Table:    [ 1557 taxa by 6 taxonomic ranks ]
+
+Nous pouvons visualiser ce que contient notre objet ps. Nous pouvons que
+nous avons 1557 taxa répartis en 11 échantillons. Ces 11 échantillons
+ont chaque 2 variable qui sont donc la date et la profondeur. Les 1557
+taxa sont répartis en 6 rangs taxonomiques
+
+``` r
+rank_names(ps)
+```
+
+    ## [1] "Kingdom" "Phylum"  "Class"   "Order"   "Family"  "Genus"
+
+Nous pouvons donc voir que les rangs taxonomiques s’arrêtes au genre,
+expliquant donc pourquoi il n’y a que 6 rangs taxonomiques.
 
 ``` r
 table(tax_table(ps)[, "Phylum"], exclude = NA)
@@ -658,11 +690,11 @@ table(tax_table(ps)[, "Phylum"], exclude = NA)
     ##                  Dependentiae              Desulfobacterota 
     ##                             1                             8 
     ##               Elusimicrobiota                Fibrobacterota 
-    ##                             1                             3 
+    ##                             1                             2 
     ##               Gemmatimonadota               Hydrogenedentes 
     ##                             7                             1 
     ##              Margulisbacteria Marinimicrobia (SAR406 clade) 
-    ##                            24                            81 
+    ##                            23                            81 
     ##                   Myxococcota                         NB1-j 
     ##                             5                             2 
     ##                  Nitrospinota                       PAUC34f 
@@ -674,13 +706,17 @@ table(tax_table(ps)[, "Phylum"], exclude = NA)
     ##             Verrucomicrobiota 
     ##                            71
 
-fghj
+Nous pouvons visualiser notre objet taxtab et voir les abondances de
+chaque phylum. Certains phylum ont de forte abondances comme par exemple
+les Proteobacteria avec 786 occurences contre 1 pour les
+Campilobacterota.
 
 ``` r
 ps0 <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 ```
 
-fghbn,
+Dans l’objet ps0 on va filtrer les phylum et enlever ceux qui ne sont
+pas caractérisés.
 
 ``` r
 prevdf = apply(X = otu_table(ps0),
@@ -691,7 +727,11 @@ TotalAbundance = taxa_sums(ps0),
 tax_table(ps0))
 ```
 
-dfghj
+Les fonctions précédentes permettent de calculer la prévalence des taxa
+ainsi que le filtrage qualité c’est à dire le nombre d’echantillons dans
+lequel un taxa apparait au moins une fois. On enregistre tout ça dans un
+data frame et on ajoute l’annotation taxonomique et le nombre total de
+read au data frame. Ici on fait ca pour l’objet ps0.
 
 ``` r
 plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
@@ -709,10 +749,10 @@ plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$P
     ## 9                   Dependentiae 1.000000    1
     ## 10              Desulfobacterota 2.000000   16
     ## 11               Elusimicrobiota 1.000000    1
-    ## 12                Fibrobacterota 2.666667    8
+    ## 12                Fibrobacterota 2.500000    5
     ## 13               Gemmatimonadota 2.428571   17
     ## 14               Hydrogenedentes 1.000000    1
-    ## 15              Margulisbacteria 1.833333   44
+    ## 15              Margulisbacteria 1.826087   42
     ## 16 Marinimicrobia (SAR406 clade) 4.456790  361
     ## 17                   Myxococcota 2.400000   12
     ## 18                         NB1-j 1.500000    3
@@ -724,7 +764,7 @@ plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$P
     ## 24              Thermoplasmatota 2.722222   49
     ## 25             Verrucomicrobiota 3.788732  269
 
-dfvg
+On va donc pouvoir voir la prévalence de nos échantillons.
 
 ``` r
 filterPhylum = c("Dependentiae", "Campilobacterota", "Elusimicrobiota", "Hydrogenedentes","NB1-j")
@@ -733,11 +773,15 @@ ps1
 ```
 
     ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 1541 taxa and 11 samples ]
+    ## otu_table()   OTU Table:         [ 1539 taxa and 11 samples ]
     ## sample_data() Sample Data:       [ 11 samples by 2 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 1541 taxa by 6 taxonomic ranks ]
+    ## tax_table()   Taxonomy Table:    [ 1539 taxa by 6 taxonomic ranks ]
 
-fghj,hgvf
+Grâce au tableau de prévalence nous pouvons décider d’enlever ou non
+certains phylum qui n’ont pas assez de prévalence. Il a été décidé que
+les phylums avec une prévalence inférieur ou égale à 3 seraient enlevés.
+Ainsi 5 phylums sont enelevés, Dependentiae, Campilobacterota,
+Elusimicrobiota, Hydrogenedentes et NB1-j.
 
 ``` r
 prevdf3 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
@@ -748,8 +792,18 @@ scale_x_log10() + xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") +
 facet_wrap(~Phylum) + theme(legend.position="none")
 ```
 
-![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
-fghbnj,
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+
+Les graphiques montrent la prévelance et l’abondance totale de chaque
+phylum. Les Protéobacteria sont bien retrouvé en forte abondance. Cette
+représentation permet donc de visualiser l’ensemble des phylum. Il
+faudra donc faire d’autres analyses afin de savoir si certains sont plus
+présents à une période de l’année ou à une certaine profondeur afin de
+pouvoir par exemple déterminer un bon biomarqueur.
+
+## Influence de la pronfondeur et de la saison sur la structure des communautés.
+
+### PCoA
 
 ``` r
 GP.ord <- ordinate(ps, "PCoA", "bray")
@@ -757,8 +811,29 @@ graph1 = plot_ordination(ps, GP.ord, type="samples", color="Profondeur", shape="
 graph1 + geom_point(size=4)
 ```
 
-![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
-ffffff
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+
+Une PCoA a été réalisée en utilisant l’indice de Bray-Curtis, nous
+permettant d’évaluer la dissimilarité des taxons des échantillons en
+fonction de deux paramètres, la date et la profondeur. Nous avons des
+ronds et des triangles qui représentent respectivement le mois de Mars
+et de Septembre. On peut voir sur ce graphique que les distributions de
+Mars et de Septembre sont assez différentes. Il semble que les taxons du
+mois de Mars et de Septembre sont très différents. La saison aurait donc
+une influence sur la structure des communautés. On observe aussi qu’il y
+a des couleurs réprésentant les profondeurs des échantillons, rouge
+correspondant au fond, vert à une profondeur moyenne et bleu à une
+profondeur de surface. Au contraire des dates, il semblerait que
+certains échantillons de différentes profondeurs soient proche. En effet
+pour le mois de Mars, deux échantillons de surface sont assez proche
+d’un échantillon de fond. pourtant nous savons que les échantillons
+des fonds et ceux des surfaces sont très éloignés en terme de distance,
+pourtant ils sont assez proche pour ce mois. Pour le mois de Septembre
+nous pouvons voir que les échantillons de surface et de profondeurs
+moyennes sont assez proche, alors que les échantillons des fonds sont
+très éloignés de ces deux là. Il semblerait donc que la pronfondeur ai
+une plus faible influence sur la structure des communautés, même si il
+semble que ce soit un peu le cas dans les échantillons de Septembre.
 
 ``` r
 top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:30]
@@ -767,8 +842,87 @@ ps.top20 <- prune_taxa(top20, ps.top20)
 plot_bar(ps.top20, x="Profondeur", fill="Genus") + facet_wrap(~date, scales="free_x")
 ```
 
-![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
-ffffff
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+
+Un histogramme de l’abondance des différents genres a été tracé en
+fonction de la pronfondeur et de la date. Nous pouvons déjà voir que les
+abondances sont vraiment différentes entre les mois, Septembre montrant
+des abondances beaucoup plus importantes que celles de Mars. Concernant
+le mois de Septembre, la profondeur fond est plus abondante que les deux
+profondeursmoyennes et de surface. Il est aussi important de remarquer
+qu’il n’y a pas d’échantillon de profondeur moyenne pour le mois de
+Mars. Il semblerait donc que nous ayons de grosses différences entre les
+abondances liées aux dates plutôt qu’aux profondeurs. Cela conforte donc
+ce que nous avons observé avec la PCoA. un test statistique pourrait
+être réalisé afin de mieux voir l’influence des profondeurs et des
+dates sur les communautés microbiennes, et apporter une meilleure
+précision.
+
+On peut aussi voir une plus grand diversité d’espèces pour le mois de
+Septembre par rapport au mois de Mars. Cette différence de diversité
+pourrait nous permettre d’identifier certains biomarqueurs du milieu.
+Nous testerons donc les OTUs “Amylibacter”, “NS4 marine group”, “NS5
+marine group”, “Roseobacter clade NAC11-7 lineage” et “Synechococcus
+CC9902”, car il semblerait qu’ils ne soient pas, ou partiellement
+présents pour le mois de Mars.
+
+### Test Adonis
+
+``` r
+library(vegan)
+```
+
+    ## Loading required package: permute
+
+    ## Loading required package: lattice
+
+    ## This is vegan 2.5-7
+
+Adonis est un test statistique qui fait parti du package Vegan.
+
+``` r
+adonis <- adonis(ps@otu_table ~ Profondeur * date, data = data.frame(ps@sam_data), permutations =999, method = "bray")
+adonis
+```
+
+    ## 
+    ## Call:
+    ## adonis(formula = ps@otu_table ~ Profondeur * date, data = data.frame(ps@sam_data),      permutations = 999, method = "bray") 
+    ## 
+    ## Permutation: free
+    ## Number of permutations: 999
+    ## 
+    ## Terms added sequentially (first to last)
+    ## 
+    ##                 Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)    
+    ## Profondeur       2   0.42409 0.21205  9.0130 0.33412  0.003 ** 
+    ## date             1   0.53775 0.53775 22.8568 0.42366  0.001 ***
+    ## Profondeur:date  1   0.16628 0.16628  7.0676 0.13100  0.016 *  
+    ## Residuals        6   0.14116 0.02353         0.11121           
+    ## Total           10   1.26928                 1.00000           
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Ce test permet de voir différentes valeurs en fonction de la profondeur,
+de la date ou des deux en même temps. On regarde le R2, afin de pouvoir
+savoir comment la profondeur et la date peuvent influencer les
+communautés. Il semblerait que la profondeur explique environ 33% de la
+diversité des espèces dans les échantillons. La p-value est assez bonne
+ce qui montre que ce résultat est significatif. Lorsqu’on regarde la
+date on voit qu’elle explique environ 42% de la diversité des espèces
+dans les échantillons. De plus sa p-value est plus faible que celle de
+la profondeur, montrant ainsi que les résultats sont encore plus
+significatifs. Lorsqu’on analyse la profondeur et la date ensemble on
+voit qu’ils expliquent 13% de la diversité des espèces lorsqu’ils sont
+ensemble. Même si la p-value est toujours inférieur à 0,05, elle reste
+supérieur aux deux autres.
+
+Ainsi ce test permet de confirmer ce que nous disions plus haut, la date
+(la saison) joue un rôle bien plus important sur la distribution des
+communautés microbienne. La profondeur joue aussi un rôle mais celui ci
+semble moins important.
+
+## Recherche de biomarqueurs
 
 ``` r
 plot_abundance = function(physeq,title = "",
@@ -794,7 +948,18 @@ plotAfter = plot_abundance(ps3rj,"")
 grid.arrange(nrow = 2, plotBefore, plotAfter)
 ```
 
-![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-38-1.png)<!-- --> ffff
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+
+Les fonctions précédentes ont permis de créer des objets afin de tracer
+un graphique donnant la répartition des Amylibacter en fonction des
+profondeurs et des dates. Le premier graphique représente les abondances
+avant traitement (donc se trouvant dans l’obet ps1) et le deuxième
+représente les abondances après traitements (se trouvant dans ps3rj).
+Nous pouvons voir qu"il est plus présent en Septembre qu’en Mars, ce qui
+pourrait faire de lui un biomarqueur. Cependant pour un bon biomarqueur
+il aurait fallu qu’il soit abscent en Mars ou en Septembre et présent
+dans l’autre date. Nous allons donc tester d’autres potentiels
+biomarqueurs et voir lequel serait le meilleur.
 
 ``` r
 plot_abundance = function(physeq,title = "",
@@ -820,5 +985,141 @@ plotAfter = plot_abundance(ps3rd,"")
 grid.arrange(nrow = 2, plotBefore, plotAfter)
 ```
 
-![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
-fffff
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+
+Nous appliquons là aussi les mêmes fonctions que celles pour l’analyse
+des Amylibacter. Ici nous pouvons observer que les NS4 sont plus
+abondants en Septembre qu’en Mars. Comme avec les Amylibacter, les NS4
+sont quand même présent en Mars, mais en faible abondance. ils peuvent
+donc là aussi servir de biomarqueurs car il y a une grosse différence
+d’abondance.
+
+``` r
+plot_abundance = function(physeq,title = "",
+Facet = "Genus", Color = "Genus"){
+p1f = subset_taxa(physeq, Genus %in% c("NS5 marine group"))
+mphyseq = psmelt(p1f)
+mphyseq <- subset(mphyseq, Abundance > 0)
+ggplot(data = mphyseq, mapping = aes_string(x = "date",y = "Profondeur",
+color = Color, fill = Color)) +
+geom_violin(fill = NA) +
+geom_point(size = 1, alpha = 0.3,
+position = position_jitter(width = 0.3)) +
+facet_wrap(facets = Facet) + theme(legend.position="none")}
+```
+
+``` r
+ps3rd = transform_sample_counts(ps1, function(x){x / sum(x)})
+```
+
+``` r
+plotBefore = plot_abundance(ps1,"")
+plotAfter = plot_abundance(ps3rd,"")
+grid.arrange(nrow = 2, plotBefore, plotAfter)
+```
+
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
+
+Nous réalisons là aussi les mêmes fonctions et nous avons le même type
+de graphique que précédement. Ici nous pouvons aussi conclure qu’il y a
+une différence d’abondance entre le mois de Septembre de et Mars pour
+NS5. Nous pouvons comme les autres l’utiliser comme biomarqueurs même si
+il y a toujours présence de NS5 en Mars.
+
+``` r
+plot_abundance = function(physeq,title = "",
+Facet = "Genus", Color = "Genus"){
+p1f = subset_taxa(physeq, Genus %in% c("Roseobacter clade NAC11-7 lineage"))
+mphyseq = psmelt(p1f)
+mphyseq <- subset(mphyseq, Abundance > 0)
+ggplot(data = mphyseq, mapping = aes_string(x = "date",y = "Profondeur",
+color = Color, fill = Color)) +
+geom_violin(fill = NA) +
+geom_point(size = 1, alpha = 0.3,
+position = position_jitter(width = 0.3)) +
+facet_wrap(facets = Facet) + theme(legend.position="none")}
+```
+
+``` r
+ps3rd = transform_sample_counts(ps1, function(x){x / sum(x)})
+```
+
+``` r
+plotBefore = plot_abundance(ps1,"")
+plotAfter = plot_abundance(ps3rd,"")
+grid.arrange(nrow = 2, plotBefore, plotAfter)
+```
+
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-50-1.png)<!-- --> Nous
+réalisons les mêmes fonctions et nous obtenons le même graphique que
+pour les analyses précédentes. Comme pour Amylibacter, il y a une plus
+faible abondance des Roseobacter en Mars. En revanche la différence
+d’abondance n’est pas incroyable, il pourrait servir de biomarqueur
+mais ce n’est clairement pas le meilleur comparé à ceux que nous avons
+analysé jusque là.
+
+``` r
+plot_abundance = function(physeq,title = "",
+Facet = "Genus", Color = "Genus"){
+p1f = subset_taxa(physeq, Genus %in% c("SUP05 cluster"))
+mphyseq = psmelt(p1f)
+mphyseq <- subset(mphyseq, Abundance > 0)
+ggplot(data = mphyseq, mapping = aes_string(x = "date",y = "Profondeur",
+color = Color, fill = Color)) +
+geom_violin(fill = NA) +
+geom_point(size = 1, alpha = 0.3,
+position = position_jitter(width = 0.3)) +
+facet_wrap(facets = Facet) + theme(legend.position="none")}
+```
+
+``` r
+ps3rd = transform_sample_counts(ps1, function(x){x / sum(x)})
+```
+
+``` r
+plotBefore = plot_abundance(ps1,"")
+plotAfter = plot_abundance(ps3rd,"")
+grid.arrange(nrow = 2, plotBefore, plotAfter)
+```
+
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
+
+ffffff
+
+``` r
+plot_abundance = function(physeq,title = "",
+Facet = "Genus", Color = "Genus"){
+p1f = subset_taxa(physeq, Genus %in% c("Synechococcus CC9902"))
+mphyseq = psmelt(p1f)
+mphyseq <- subset(mphyseq, Abundance > 0)
+ggplot(data = mphyseq, mapping = aes_string(x = "date",y = "Profondeur",
+color = Color, fill = Color)) +
+geom_violin(fill = NA) +
+geom_point(size = 1, alpha = 0.3,
+position = position_jitter(width = 0.3)) +
+facet_wrap(facets = Facet) + theme(legend.position="none")}
+```
+
+``` r
+ps3rd = transform_sample_counts(ps1, function(x){x / sum(x)})
+```
+
+``` r
+plotBefore = plot_abundance(ps1,"")
+plotAfter = plot_abundance(ps3rd,"")
+grid.arrange(nrow = 2, plotBefore, plotAfter)
+```
+
+![](02_CC2_analyse_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
+
+Nous réalisons les mêmes fonctions et nous obtenons le même graphique
+que les analyses précédentes. Nous observons là aussi que l’abondance et
+plus faible en Mars qu’en Septembre. Comme pour les autres analyses,
+Synochococcus pourrait faire un bon biomarqueurs.
+
+Ces différentes analyses ont montré qu’il peut y avoir plusieurs
+biomarqueurs possible. Cependant se ne sont pas les meilleurs étant
+donnés qu’ils restent quand même présent dans les deux saisons. Nous
+n’avons une analyse qui n’est portée que sur les genre. peut être
+aurions nous dû analyser les espèces pour trouver certaines espèces
+présentes dans l’une des deux saisons et absentes dans l’autre.
